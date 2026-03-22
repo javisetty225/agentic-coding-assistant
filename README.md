@@ -1,28 +1,24 @@
-# ⚡ FlowForge AI
+# ⚡ Langflow Code Generation Agent
 
 > **Generate Langflow pipelines and custom Python components from a single sentence — in under 30 seconds.**
 
-[![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://python.org)
-[![Anthropic](https://img.shields.io/badge/Powered%20by-Claude%20Sonnet-orange.svg)](https://anthropic.com)
-[![Architecture](https://img.shields.io/badge/Architecture-Pi%20Agent%20Style-purple.svg)](https://github.com/badlogic/pi-mono)
-
 ---
 
-## What is FlowForge AI?
+## Langflow Code Generation Agent?
 
-FlowForge AI is an **agentic coding assistant** that replaces hours of manual
+Langflow Code Generation Agent is an **agentic coding assistant** that replaces hours of manual
 Langflow development with a single natural language description.
 
 ```
-Without FlowForge AI:               With FlowForge AI:
-────────────────────                ──────────────────
-Open Langflow UI      (5 min)       Type one sentence
-Drag boxes manually   (20 min)              ↓
-Connect arrows        (10 min)      Agent runs 16 tool calls
-Write Python component(30 min)              ↓
-Write docs            (10 min)      3 files generated  
+Without FLangflow Code Generation Agent:               With Langflow Code Generation Agent:
+────────────────────                                   ──────────────────
+Open Langflow UI      (5 min)                          Type one sentence
+Drag boxes manually   (20 min)                               ↓
+Connect arrows        (10 min)                         Agent runs 16 tool calls
+Write Python component(30 min)                               ↓
+Write docs            (10 min)                         3 files generated  
 ──────────────────────────────
-Total: ~75 minutes                  Total: 30 seconds
+Total: ~75 minutes                                     Total: 30 seconds
 ```
 
 ---
@@ -30,7 +26,7 @@ Total: ~75 minutes                  Total: 30 seconds
 ## Live Demo
 
 ```bash
-git clone https://github.com/your-username/flowforge-ai
+git clone https://github.com/javisetty225/agentic-coding-assistant
 
 uv sync
 export ANTHROPIC_API_KEY=sk-ant-...
@@ -64,7 +60,7 @@ Output:
 
 ## Architecture
 
-FlowForge AI uses the **Pi coding-agent pattern** — an extensible tool harness
+Langflow Code Generation Agent uses the **Pi coding-agent pattern** — an extensible tool harness
 where Claude drives itself by calling a flat registry of tools.
 
 ```
@@ -112,7 +108,7 @@ generated/ → your files appear here
 ## Project Structure
 
 ```
-flowforge-ai/
+langflow-codegen-agent/
 │
 ├── src/
 │   ├── main.py                    ← Entry point (run this)
@@ -230,24 +226,4 @@ cd src && python -m pytest ../tests/test_agent.py -v
 ```
 
 ---
-
-## Evaluation — 37 Automated Tests
-
-```
-Level 1 — Unit Tests
-  Node IDs are unique and correctly formatted
-  Nodes have correct Langflow structure
-  Edges connect source and target correctly
-
-Level 2 — Validation Tests
-  Catches broken JSON
-  Catches missing nodes or edges
-  Catches invalid Python components
-
-Level 3 — Artifact Tests
-  Generated flow.json is valid
-  Every edge references a real node
-  Python component inherits from Component
-  All files exist and are not empty
-```
 
