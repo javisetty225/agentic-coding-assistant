@@ -3,11 +3,11 @@ requires = ["hatchling>=1.27.0"]
 build-backend = "hatchling.build"
 
 [project]
-name = "langflow-code-generation-agent"
+name = "langflow-codegen-agent"
 version = "0.1.0"
-description = "langflowcode-generation-agent"
-#readme = "README.md"
-requires-python = ">=3.13,<3.14"
+description = "AI agent that generates Langflow flows and custom Python components from natural language"
+readme = "README.md"
+requires-python = ">=3.12"
 
 authors = [
   { name = "Nagaraju Javisetty", email = "nagajavisetty143@gmail.com" }
@@ -26,6 +26,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = []
+
+[project.urls]
+Repository = "https://github.com/javisetty225/agentic-coding-assistant"
 
 [tool.ruff]
 line-length = 120
