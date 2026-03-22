@@ -1,0 +1,230 @@
+{
+  "id": "flow-movie-recommender-2024",
+  "name": "🎬 Movie Recommendation Flow",
+  "description": "Takes a user's favourite genres and mood as input, then returns AI-powered personalised movie recommendations with streaming hints and detailed reasoning.",
+  "nodes": [
+    {
+      "id": "GenreInput-168121cc",
+      "type": "genericNode",
+      "position": { "x": 50, "y": 150 },
+      "data": {
+        "id": "GenreInput-168121cc",
+        "type": "TextInput",
+        "node": {
+          "display_name": "Favorite Genres",
+          "description": "Enter comma-separated favourite genres — e.g. 'Action, Sci-Fi, Comedy'.",
+          "base_classes": ["Text", "Message"],
+          "template": {
+            "input_value": {
+              "type": "str",
+              "display_name": "Genres",
+              "value": "Action, Sci-Fi",
+              "required": true,
+              "show": true,
+              "info": "Comma-separated list. Example: Action, Sci-Fi, Comedy"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "MoodInput-83325d21",
+      "type": "genericNode",
+      "position": { "x": 50, "y": 380 },
+      "data": {
+        "id": "MoodInput-83325d21",
+        "type": "TextInput",
+        "node": {
+          "display_name": "Current Mood",
+          "description": "Enter the viewer's current mood. Choose from: Happy, Sad, Excited, Relaxed, Romantic, Nostalgic, Adventurous, Bored, etc.",
+          "base_classes": ["Text", "Message"],
+          "template": {
+            "input_value": {
+              "type": "str",
+              "display_name": "Mood",
+              "value": "Happy",
+              "required": true,
+              "show": true,
+              "info": "E.g. Happy, Sad, Excited, Nostalgic, Romantic, Adventurous"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "MovieRecommender-92dbcbed",
+      "type": "genericNode",
+      "position": { "x": 450, "y": 250 },
+      "data": {
+        "id": "MovieRecommender-92dbcbed",
+        "type": "MovieRecommenderComponent",
+        "node": {
+          "display_name": "🎬 Movie Recommender (CineBot)",
+          "description": "AI-powered movie recommendation engine. Connects genre + mood inputs and calls the OpenAI API to produce a personalised list.",
+          "base_classes": ["Message"],
+          "template": {
+            "_type": "MovieRecommenderComponent",
+            "genres": {
+              "type": "str",
+              "display_name": "Favorite Genres",
+              "value": "Action, Sci-Fi",
+              "required": true,
+              "show": true,
+              "info": "Passed in from the Favorite Genres text input node."
+            },
+            "mood": {
+              "type": "str",
+              "display_name": "Current Mood",
+              "value": "Happy",
+              "required": true,
+              "show": true,
+              "options": [
+                "Happy",
+                "Sad",
+                "Excited",
+                "Relaxed",
+                "Scared / Thrilled",
+                "Romantic",
+                "Nostalgic",
+                "Curious / Intellectual",
+                "Adventurous",
+                "Bored"
+              ],
+              "info": "Passed in from the Current Mood text input node."
+            },
+            "num_recommendations": {
+              "type": "int",
+              "display_name": "Number of Recommendations",
+              "value": 5,
+              "required": false,
+              "show": true,
+              "info": "Between 1 and 10."
+            },
+            "era_preference": {
+              "type": "str",
+              "display_name": "Era Preference",
+              "value": "Any Era",
+              "required": false,
+              "show": true,
+              "options": [
+                "Any Era",
+                "Classic (Before 1980)",
+                "80s & 90s",
+                "2000s",
+                "2010s",
+                "Recent (2020+)"
+              ]
+            },
+            "additional_preferences": {
+              "type": "str",
+              "display_name": "Additional Preferences",
+              "value": "",
+              "required": false,
+              "show": true,
+              "info": "Optional free-text (e.g. 'Family friendly', 'Based on true story')."
+            },
+            "openai_api_key": {
+              "type": "str",
+              "display_name": "OpenAI API Key",
+              "value": "",
+              "required": true,
+              "show": true,
+              "password": true
+            },
+            "model_name": {
+              "type": "str",
+              "display_name": "OpenAI Model",
+              "value": "gpt-4o",
+              "required": false,
+              "show": true,
+              "options": ["gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "ChatOutput-447a3fa9",
+      "type": "genericNode",
+      "position": { "x": 920, "y": 140 },
+      "data": {
+        "id": "ChatOutput-447a3fa9",
+        "type": "ChatOutput",
+        "node": {
+          "display_name": "🍿 Recommendations Output",
+          "description": "Renders the formatted movie recommendation list (markdown).",
+          "base_classes": ["Message"],
+          "template": {
+            "input_value": {
+              "type": "str",
+              "display_name": "Recommendations",
+              "required": true,
+              "show": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "ParseOutput-f070759e",
+      "type": "genericNode",
+      "position": { "x": 920, "y": 400 },
+      "data": {
+        "id": "ParseOutput-f070759e",
+        "type": "ChatOutput",
+        "node": {
+          "display_name": "🧠 Reasoning Output",
+          "description": "Renders CineBot's per-movie reasoning and overall summary.",
+          "base_classes": ["Message"],
+          "template": {
+            "input_value": {
+              "type": "str",
+              "display_name": "Reasoning",
+              "required": true,
+              "show": true
+            }
+          }
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-genre-to-recommender",
+      "source": "GenreInput-168121cc",
+      "target": "MovieRecommender-92dbcbed",
+      "sourceHandle": "GenreInput-168121cc|Text|input_value",
+      "targetHandle": "MovieRecommender-92dbcbed|str|genres",
+      "animated": true,
+      "label": "genres"
+    },
+    {
+      "id": "edge-mood-to-recommender",
+      "source": "MoodInput-83325d21",
+      "target": "MovieRecommender-92dbcbed",
+      "sourceHandle": "MoodInput-83325d21|Text|input_value",
+      "targetHandle": "MovieRecommender-92dbcbed|str|mood",
+      "animated": true,
+      "label": "mood"
+    },
+    {
+      "id": "edge-recommender-to-output",
+      "source": "MovieRecommender-92dbcbed",
+      "target": "ChatOutput-447a3fa9",
+      "sourceHandle": "MovieRecommender-92dbcbed|Message|recommendations",
+      "targetHandle": "ChatOutput-447a3fa9|Message|input_value",
+      "animated": true,
+      "label": "recommendations"
+    },
+    {
+      "id": "edge-reasoning-to-output",
+      "source": "MovieRecommender-92dbcbed",
+      "target": "ParseOutput-f070759e",
+      "sourceHandle": "MovieRecommender-92dbcbed|Message|reasoning",
+      "targetHandle": "ParseOutput-f070759e|Message|input_value",
+      "animated": true,
+      "label": "reasoning"
+    }
+  ],
+  "viewport": { "x": 0, "y": 0, "zoom": 1 }
+}
