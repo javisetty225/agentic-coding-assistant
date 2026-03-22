@@ -1,7 +1,6 @@
 """
 Langflow Flow Builder
 Domain helpers that construct valid Langflow flow JSON programmatically.
-Used both by the agent and in tests.
 """
 
 from __future__ import annotations

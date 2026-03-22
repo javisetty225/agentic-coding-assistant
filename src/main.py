@@ -1,13 +1,3 @@
-#!/usr/bin/env python3
-"""
-Langflow Agent — CLI entry point
-
-Usage:
-    python main.py "Build a text summarization flow"
-    python main.py "Build a vision flow that classifies uploaded images"
-    python main.py --interactive
-"""
-
 import argparse
 import os
 import sys

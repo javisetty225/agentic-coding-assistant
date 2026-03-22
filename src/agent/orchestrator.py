@@ -1,7 +1,5 @@
 """
 Langflow Agent Orchestrator
-Architecture: Option B (Pi coding-agent style) — extensible tool harness
-with read/write/edit/bash + domain-specific Langflow tools.
 """
 
 from __future__ import annotations

@@ -9,7 +9,7 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from src.harness.flow_builder import (
+from src.agent.flow_builder import (
     build_flow,
     chat_input_node,
     chat_output_node,
