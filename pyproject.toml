@@ -1,0 +1,42 @@
+[build-system]
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "langflow-code-generation-agent"
+version = "0.1.0"
+description = "langflowcode-generation-agent"
+#readme = "README.md"
+requires-python = ">=3.13,<3.14"
+
+authors = [
+  { name = "Nagaraju Javisetty", email = "nagajavisetty143@gmail.com" }
+]
+
+dependencies = [
+    "langchain-anthropic>=0.1.16",
+    "langgraph>=0.2.20",
+    "pydantic>=2.8.2",
+    "langchain-core>=0.2.20",
+    "langchain-community>=0.2.10",
+    "anthropic>=0.36.0",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+]
+
+[project.optional-dependencies]
+dev = []
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+preview = true
+extend-select = [
+    "PLE", "PLW", "PLC", "PLR", "FAST", "I", "D419",
+    "E501", "W291", "UP004", "C416", "B033", "E722"
+]
+
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
