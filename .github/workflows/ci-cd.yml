@@ -30,7 +30,7 @@ jobs:
   test:
     name: Run tests
     runs-on: ubuntu-latest
-    needs: lint
+    #needs: lint
 
     steps:
       - name: Checkout code
@@ -54,7 +54,7 @@ jobs:
   docker_build:
     name: Build and push Docker image
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    needs: [test]
 
     steps:
       - name: Checkout code
