@@ -1,0 +1,50 @@
+services:
+
+  # ── FastAPI backend ────────────────────────────────────────────────────────
+  backend:
+    build: .
+    image: agentic-coding-assistant-backend:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    volumes:
+      # Generated artifacts appear on host machine
+      - ./src/generated:/app/src/generated
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # ── React frontend (dev) ───────────────────────────────────────────────────
+  frontend:
+    image: node:20-slim
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── CLI mode (optional — run agent interactively) ──────────────────────────
+  cli:
+    build: .
+    image: agentic-coding-assistant-backend:latest
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    volumes:
+      - ./src/generated:/app/src/generated
+    stdin_open: true
+    tty: true
+    entrypoint: ["python", "src/main.py"]
+    command: ["--interactive"]
+    profiles: ["cli"]   # only starts with: docker compose --profile cli up cli
