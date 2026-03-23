@@ -25,7 +25,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = []
+dev = [
+    "pytest",
+    "httpx"
+]
 
 [project.urls]
 Repository = "https://github.com/javisetty225/agentic-coding-assistant"
