@@ -1,96 +1,57 @@
-# ⚡ Langflow Code Generation Agent
+# ⚡ Agentic Coding Assistant
 
 > **Generate Langflow pipelines and custom Python components from a single sentence — in under 30 seconds.**
 
 ---
 
-## Langflow Code Generation Agent?
+## What is it?
 
-Langflow Code Generation Agent is an **agentic coding assistant** that replaces hours of manual
-Langflow development with a single natural language description.
+An **agentic coding assistant** that replaces hours of manual Langflow development
+with a single natural language description.
 
 ```
-Without FLangflow Code Generation Agent:               With Langflow Code Generation Agent:
-────────────────────                                   ──────────────────
-Open Langflow UI      (5 min)                          Type one sentence
-Drag boxes manually   (20 min)                               ↓
-Connect arrows        (10 min)                         Agent runs 16 tool calls
-Write Python component(30 min)                               ↓
-Write docs            (10 min)                         3 files generated  
-──────────────────────────────
-Total: ~75 minutes                                     Total: 30 seconds
-```
-
----
-
-## Live Demo
-
-```bash
-git clone https://github.com/javisetty225/agentic-coding-assistant
-
-uv sync
-export ANTHROPIC_API_KEY=sk-ant-...
-
-python src/main.py --interactive
-```
-
-Type any description:
-```
-Describe your Langflow flow: Build a movie recommendation flow with
-MovieFilterComponent for genre and mood filtering then LLM generates
-personalized recommendations
-```
-
-Output:
-```
-✓  Generation complete
-────────────────────────────────────────────────────
-   Files generated : 3
-   Tool calls made : 16
-
-   Artifacts:
-     • MovieRecommenderComponent.py    (10,294 chars)
-     • flow.json                       (9,584 chars)
-     • README.md                       (6,998 chars)
-
-   Saved to: ./generated/
+Without the agent:                    With the agent:
+──────────────────                    ───────────────
+Open Langflow UI      (5 min)         Type one sentence
+Drag boxes manually   (20 min)                ↓
+Connect arrows        (10 min)        Agent runs ~16 tool calls
+Write Python component(30 min)                ↓
+Write docs            (10 min)        3 files generated ✅
+───────────────────────────────
+Total: ~75 minutes                    Total: 30 seconds
 ```
 
 ---
 
 ## Architecture
 
-Langflow Code Generation Agent uses the **Pi coding-agent pattern** — an extensible tool harness
-where Claude drives itself by calling a flat registry of tools.
+**Pi coding-agent style** (extensible tool harness).
 
 ```
 You type a description
         │
         ▼
-main.py → starts the agent
+src/main.py  ──────────────────→  CLI mode
+        │
+src/backend/app/  ─────────────→  REST API mode (FastAPI)
         │
         ▼
-orchestrator.py → sends to Claude with 7 tools
+src/agent/orchestrator.py  ────→  Agent loop + 7 tools
         │
         ▼
-┌──────────────────────────────────────────┐
-│         Agent Loop (max 20 iters)        │
-│                                          │
-│  Claude picks a tool → agent runs it     │
-│  Result sent back → Claude picks next    │
-│  Repeats until Claude says "done"        │
-└──────────────────────────────────────────┘
+src/agent/flow_builder.py  ────→  Correct Langflow structures
         │
         ▼
-flow_builder.py → correct Langflow structures
-        │
-        ▼
-generated/ → your files appear here
+src/generated/  ───────────────→  flow.json + component.py + README.md
 ```
 
----
+### Why Pi over Pydantic Monty?
 
-## The 7 Tools
+Langflow artifact generation is **exploratory** — the agent must decide which
+nodes to create, validate iteratively, and fix mistakes. Pi's flexible tool
+harness handles this better than a fixed left-to-right execution model.
+
+### The 7 Tools
 
 | Tool | Purpose |
 |------|---------|
@@ -108,122 +69,128 @@ generated/ → your files appear here
 ## Project Structure
 
 ```
-langflow-codegen-agent/
+agentic-coding-assistant/
 │
 ├── src/
-│   ├── main.py                    ← Entry point (run this)
+│   ├── main.py                           ← CLI entry point
 │   │
 │   ├── agent/
-│   │   ├── orchestrator.py        ← Agent loop + tools + workspace
-│   │   └── flow_builder.py        ← Langflow node/edge/flow helpers
+│   │   ├── orchestrator.py               ← Agent loop + 7 tools + Workspace
+│   │   └── flow_builder.py               ← Langflow node/edge/flow helpers
 │   │
-│   └── generated/                 ← Created automatically on run
-│       ├── flow.json              ← Import into Langflow UI
-│       ├── MovieRecommenderComponent.py  ← Custom component
-│       └── README.md              ← Usage instructions
+│   ├── backend/
+│   │   └── app/
+│   │       ├── main.py                   ← FastAPI create_app() factory
+│   │       ├── models/schemas.py         ← Pydantic request/response models
+│   │       ├── services/agent_service.py ← Wraps LangflowAgent for REST
+│   │       └── routers/
+│   │           ├── generate.py           ← POST /api/v1/generate
+│   │           ├── history.py            ← GET  /api/v1/history
+│   │           └── health.py             ← GET  /health
+│   │
+│   └── generated/                        ← Created automatically on run
+│       ├── flow.json                     ← Import into Langflow UI
+│       ├── *.py                          ← Custom Python component
+│       └── README.md                     ← Usage instructions
+│
+├── frontend/
+│   ├── src/
+│   │   ├── App.tsx                       ← Main React UI component
+│   │   ├── App.css                       ← Dark terminal aesthetic
+│   │   ├── api/client.ts                 ← Typed fetch calls to backend
+│   │   ├── hooks/useGenerate.ts          ← Generation state hook
+│   │   └── types/api.ts                  ← TypeScript interfaces
+│   ├── index.html
+│   ├── package.json
+│   └── vite.config.ts                    ← Proxies /api → localhost:8000
 │
 ├── tests/
-│   └── test_agent.py              ← 37 tests
+│   └── test_agent.py                     ← 33 tests, all passing
 │
-├── demo/
-│   └── index.html                 ← Browser demo
-│
-├── DECISIONS.md                   ← Architectural rationale
-└── pyproject.toml
+├── .github/workflows/ci.yml              ← CI: tests + TS check + Docker build
+├── Dockerfile                            ← Serves FastAPI via uvicorn --factory
+├── docker-compose.yml                    ← Backend + frontend + CLI profile
+├── pyproject.toml                        ← Python dependencies (uv)
+└── DECISIONS.md                          ← Architectural rationale
 ```
 
----
+## Quick Start
 
-## Generated Artifacts
-
-### flow.json — Visual Pipeline
-Import directly into Langflow UI with one click.
-
-```
-[Genre Input] ──→ ┌─────────────────────┐ ──→ [Recommendations]
-                  │  MovieRecommender   │
-[Mood Input]  ──→ │     (CineBot)       │ ──→ [Reasoning]
-                  └─────────────────────┘
-```
-
-### MovieRecommenderComponent.py — Custom Component
-A production-quality Langflow component featuring:
-- 7 configurable inputs (genre, mood, era, count, model)
-- 2 outputs (recommendations + reasoning)
-- OpenAI API integration with JSON response parsing
-- Smart LLM result caching (one API call for both outputs)
-- Full error handling
-
-### VisionAnalyzer.py — Bonus Multimodal Component
-Handles images instead of just text:
-- Accepts PNG / JPG / WEBP / GIF uploads via `FileInput`
-- Base64 encodes images for Claude vision API
-- 4 task modes: `describe`, `classify`, `extract_text`, `qa`
-- Movie use case: upload a poster → identify genre, cast, mood
-
----
-
-## Usage Options
+### Option 1 — CLI (simplest)
 
 ```bash
-# Interactive mode (keep generating multiple flows)
-python main.py --interactive
+git clone https://github.com/javisetty225/agentic-coding-assistant
+cd agentic-coding-assistant
 
-# Single shot
-python main.py "Build a sentiment analysis flow with a custom component"
+uv sync
+export ANTHROPIC_API_KEY=sk-ant-...
 
-# Custom output directory
-python main.py "Build a RAG flow" --output-dir ./my-output
+python src/main.py --interactive
+```
 
-# Run tests
-cd src && python -m pytest ../tests/test_agent.py -v
+### Option 2 — Full Stack (Backend + Frontend)
+
+**Terminal 1 — Backend:**
+```bash
+cd agentic-coding-assistant
+export ANTHROPIC_API_KEY=sk-ant-...
+uvicorn src.backend.app.main:create_app --factory --reload --port 8000
+```
+
+**Terminal 2 — Frontend:**
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173` ✅
+
+### Option 3 — Docker (everything at once)
+
+```bash
+echo "ANTHROPIC_API_KEY=sk-ant-..." > .env
+docker compose up
+```
+
+| Service | URL |
+|---------|-----|
+| Frontend UI | http://localhost:5173 |
+| API docs | http://localhost:8000/docs |
+
+### Option 4 — Single shot
+
+```bash
+python src/main.py "Build a movie recommendation flow with MovieFilterComponent"
+# Files saved to src/generated/
 ```
 
 ---
 
 ## Example Prompts
 
-```
-# Text processing
-"Build a text summarization chatbot flow with an OpenAI model"
-
-# Movie intelligence
+```bash
+# Movie intelligence (matches project theme)
 "Build a movie recommendation flow with MovieFilterComponent
  for genre and mood filtering then LLM generates recommendations"
 
-# Sentiment analysis
-"Build a sentiment analysis pipeline with a custom
- PolarityDetector component that returns POSITIVE NEGATIVE NEUTRAL"
-
-# Vision / Bonus
+# Vision — Bonus multimodal
 "Build a vision flow that accepts image uploads and uses
  Claude to classify movie posters into genres"
 
-# RAG pipeline
-"Build a RAG flow with document input text splitter
- embedder vector store retriever LLM and chat output"
+# Text processing
+"Build a text summarization chatbot flow with an OpenAI model"
 ```
 
 ---
 
-## How to Import into Langflow
+## Generated Artifacts
 
-```
-1. Install Langflow
-   pip install langflow
+### `flow.json` — Visual Pipeline
+Import directly into Langflow: **Import Flow** → select `flow.json`.
+All nodes and connections are drawn automatically.
 
-2. Start Langflow
-   python -m langflow run
-
-3. Open browser at http://localhost:7860
-
-4. Click Import Flow
-   Select src/generated/flow.json
-
-5. Add your OpenAI API key in the flow node
-
-6. Click Run ✅
-```
+### `*.py` — Custom Python Component
+Drop into `~/.langflow/components/` or paste into the Langflow component editor.
 
 ---
-
