@@ -1,8 +1,6 @@
-# noqa: E501 PLW0108 PLW0108
 """
-Langflow Agent Orchestrator
-Architecture: Option B (Pi coding-agent style) — extensible tool harness
-with read/write/edit/bash + domain-specific Langflow tools.
+Agentic Coding Assistant — Orchestrator
+Architecture: Option B (Pi coding-agent style) — extensible tool harness.
 """
 
 from __future__ import annotations
@@ -14,6 +12,7 @@ from dataclasses import dataclass
 from typing import Callable
 
 import anthropic
+
 
 # ---------------------------------------------------------------------------
 # Tool registry
@@ -35,10 +34,10 @@ class Tool:
 
 
 class ToolRegistry:
-    def __init__(self):
+    def __init__(self) -> None:
         self._tools: dict[str, Tool] = {}
 
-    def register(self, tool: Tool):
+    def register(self, tool: Tool) -> None:
         self._tools[tool.name] = tool
 
     def get(self, name: str) -> Tool | None:
@@ -54,21 +53,21 @@ class ToolRegistry:
         try:
             result = tool.fn(**inputs)
             return str(result)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return f"ERROR calling {name}: {e}"
 
 
 # ---------------------------------------------------------------------------
-# Scratch-pad (in-memory workspace)
+# In-memory workspace
 # ---------------------------------------------------------------------------
 
 class Workspace:
     """Simple in-memory key/value store used by tools."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._files: dict[str, str] = {}
 
-    def write(self, path: str, content: str):
+    def write(self, path: str, content: str) -> None:
         self._files[path] = content
 
     def read(self, path: str) -> str:
@@ -96,15 +95,13 @@ class Workspace:
 def make_tools(workspace: Workspace, artifact_store: dict) -> ToolRegistry:
     registry = ToolRegistry()
 
-    # --- generic file tools (pi-style) ---
-
     registry.register(Tool(
         name="write_file",
         description="Write content to a workspace file. Use for Python components, JSON flows, markdown docs.",
         input_schema={
             "type": "object",
             "properties": {
-                "path": {"type": "string", "description": "Relative file path, e.g. 'flow.json' or 'my_component.py'"},
+                "path": {"type": "string", "description": "Relative file path"},
                 "content": {"type": "string", "description": "Full file content"},
             },
             "required": ["path", "content"],
@@ -120,7 +117,7 @@ def make_tools(workspace: Workspace, artifact_store: dict) -> ToolRegistry:
             "properties": {"path": {"type": "string"}},
             "required": ["path"],
         },
-        fn=lambda path: workspace.read(path),
+        fn=workspace.read,
     ))
 
     registry.register(Tool(
@@ -130,8 +127,8 @@ def make_tools(workspace: Workspace, artifact_store: dict) -> ToolRegistry:
             "type": "object",
             "properties": {
                 "path": {"type": "string"},
-                "old_text": {"type": "string", "description": "Exact text to replace"},
-                "new_text": {"type": "string", "description": "Replacement text"},
+                "old_text": {"type": "string"},
+                "new_text": {"type": "string"},
             },
             "required": ["path", "old_text", "new_text"],
         },
@@ -145,14 +142,12 @@ def make_tools(workspace: Workspace, artifact_store: dict) -> ToolRegistry:
         fn=lambda: json.dumps(workspace.list_files()),
     ))
 
-    # --- Langflow-specific domain tools ---
-
     registry.register(Tool(
         name="generate_node_id",
-        description="Generate a unique node ID suitable for a Langflow flow JSON.",
+        description="Generate a unique node ID for a Langflow flow JSON.",
         input_schema={
             "type": "object",
-            "properties": {"prefix": {"type": "string", "description": "Node type prefix, e.g. 'ChatInput'"}},
+            "properties": {"prefix": {"type": "string"}},
             "required": ["prefix"],
         },
         fn=lambda prefix: f"{prefix}-{uuid.uuid4().hex[:8]}",
@@ -160,7 +155,7 @@ def make_tools(workspace: Workspace, artifact_store: dict) -> ToolRegistry:
 
     registry.register(Tool(
         name="validate_flow_json",
-        description="Validate that a JSON string is a well-formed Langflow flow (has nodes + edges arrays).",
+        description="Validate that a JSON string is a well-formed Langflow flow.",
         input_schema={
             "type": "object",
             "properties": {"json_str": {"type": "string"}},
@@ -171,7 +166,7 @@ def make_tools(workspace: Workspace, artifact_store: dict) -> ToolRegistry:
 
     registry.register(Tool(
         name="validate_component_python",
-        description="Check that a Python string defines a class inheriting from Component with required methods.",
+        description="Check that a Python string defines a valid Langflow Component.",
         input_schema={
             "type": "object",
             "properties": {"code": {"type": "string"}},
@@ -182,15 +177,14 @@ def make_tools(workspace: Workspace, artifact_store: dict) -> ToolRegistry:
 
     registry.register(Tool(
         name="get_langflow_schema_template",
-        description="Return a minimal Langflow flow JSON template or component class template to start from.",
+        description="Return a minimal Langflow flow JSON or component class template.",
         input_schema={
             "type": "object",
             "properties": {
                 "template_type": {
                     "type": "string",
                     "enum": ["flow", "text_component", "multimodal_component"],
-                    "description": "Which template to return",
-                }
+                },
             },
             "required": ["template_type"],
         },
@@ -205,6 +199,10 @@ def _write(workspace: Workspace, artifact_store: dict, path: str, content: str) 
     artifact_store[path] = content
     return f"written {len(content)} chars to '{path}'"
 
+
+# ---------------------------------------------------------------------------
+# Public validation helpers (used by tests + tools)
+# ---------------------------------------------------------------------------
 
 def validate_flow(json_str: str) -> str:
     try:
@@ -231,7 +229,6 @@ def validate_component(code: str) -> str:
     if "inputs" not in code and "outputs" not in code:
         issues.append("missing inputs/outputs class attributes")
     if not issues:
-        # Check for at least one method
         method_count = len(re.findall(r"def \w+\(self", code))
         if method_count == 0:
             issues.append("no instance methods found")
@@ -252,7 +249,8 @@ def get_template(template_type: str) -> str:
         }, indent=2)
 
     if template_type == "text_component":
-        return '''from langflow.custom import Component
+        return '''\
+from langflow.custom import Component
 from langflow.inputs import MessageTextInput, StrInput
 from langflow.outputs import MessageOutput
 from langflow.schema.message import Message
@@ -282,12 +280,12 @@ class MyTextComponent(Component):
 
     def process_text(self) -> Message:
         text = self.input_text
-        # TODO: implement processing logic
         return Message(text=f"Processed: {text}")
 '''
 
     if template_type == "multimodal_component":
-        return '''from langflow.custom import Component
+        return '''\
+from langflow.custom import Component
 from langflow.inputs import FileInput, MessageTextInput
 from langflow.outputs import MessageOutput
 from langflow.schema.message import Message
@@ -303,13 +301,11 @@ class MultiModalComponent(Component):
         FileInput(
             name="image_file",
             display_name="Image File",
-            info="Upload an image (PNG, JPG, WEBP).",
             file_types=["png", "jpg", "jpeg", "webp"],
         ),
         MessageTextInput(
             name="question",
             display_name="Question",
-            info="What to ask about the image.",
             value="Describe this image.",
         ),
     ]
@@ -319,29 +315,21 @@ class MultiModalComponent(Component):
     ]
 
     def analyze_image(self) -> Message:
-        image_path = self.image_file
-        question = self.question
-
-        with open(image_path, "rb") as f:
+        with open(self.image_file, "rb") as f:
             image_data = base64.b64encode(f.read()).decode("utf-8")
-
-        ext = image_path.rsplit(".", 1)[-1].lower()
-        media_type = f"image/{'jpeg' if ext in ('jpg','jpeg') else ext}"
-
-        # Uses Anthropic client (injected via Langflow secret store)
+        ext = self.image_file.rsplit(".", 1)[-1].lower()
+        media_type = f"image/{'jpeg' if ext in ('jpg', 'jpeg') else ext}"
         from anthropic import Anthropic
         client = Anthropic()
-
         response = client.messages.create(
             model="claude-opus-4-6",
             max_tokens=1024,
-            messages=[{
-                "role": "user",
-                "content": [
-                    {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": image_data}},
-                    {"type": "text", "text": question},
-                ],
-            }],
+            messages=[{"role": "user", "content": [
+                {"type": "image", "source": {
+                    "type": "base64", "media_type": media_type, "data": image_data,
+                }},
+                {"type": "text", "text": self.question},
+            ]}],
         )
         return Message(text=response.content[0].text)
 '''
@@ -349,15 +337,16 @@ class MultiModalComponent(Component):
 
 
 # ---------------------------------------------------------------------------
-# Agent loop
+# System prompt
 # ---------------------------------------------------------------------------
 
-SYSTEM_PROMPT = """You are an expert Langflow architect and Python developer.
+SYSTEM_PROMPT = """\
+You are an expert Langflow architect and Python developer.
 Your job is to generate valid Langflow artifacts from a natural language description.
 
 You MUST produce:
 1. A complete Langflow flow JSON (file: flow.json) with proper nodes and edges
-2. At least one custom Python component (file: <ComponentName>.py) that inherits from Component
+2. At least one custom Python component (.py) that inherits from Component
 3. A README.md explaining how to import and use the generated artifacts
 
 Architecture rules:
@@ -365,18 +354,28 @@ Architecture rules:
 - Always call generate_node_id for every node you create
 - Always call validate_flow_json before writing the final flow.json
 - Always call validate_component_python before writing the final component .py
-- Nodes must have: id, type="genericNode", position (x,y), data with {id, type, node:{template, base_classes, display_name}} 
+- Nodes must have: id, type="genericNode", position (x,y),
+  data with {id, type, node:{template, base_classes, display_name}}
 - Edges must have: id, source, target, sourceHandle, targetHandle
-- Langflow component inputs use classes from langflow.inputs; outputs from langflow.outputs
-- For multimodal requests: generate a vision component using FileInput and base64 image encoding
+- Langflow component inputs use classes from langflow.inputs
+- Langflow component outputs use classes from langflow.outputs
+- For multimodal requests: generate a vision component using FileInput
 
 Be thorough and generate production-quality code, not stubs.
 Think step by step before writing each file.
 """
 
 
+# ---------------------------------------------------------------------------
+# Agent loop
+# ---------------------------------------------------------------------------
+
 class LangflowAgent:
-    def __init__(self, api_key: str | None = None, model: str = "claude-sonnet-4-6"):
+    def __init__(
+        self,
+        api_key: str | None = None,
+        model: str = "claude-sonnet-4-6",
+    ) -> None:
         self.client = anthropic.Anthropic(api_key=api_key)
         self.model = model
         self.workspace = Workspace()
@@ -389,7 +388,7 @@ class LangflowAgent:
         """Run the agent loop; return generated artifacts."""
         self.conversation = [{"role": "user", "content": user_description}]
 
-        for iteration in range(max_iterations):
+        for _ in range(max_iterations):
             response = self.client.messages.create(
                 model=self.model,
                 max_tokens=4096,
@@ -398,30 +397,53 @@ class LangflowAgent:
                 messages=self.conversation,
             )
 
-            # Collect assistant turn
-            assistant_content = response.content
+            # Serialize SDK objects → plain dicts (prevents 400 BadRequestError)
+            assistant_content = self._serialize_content(response.content)
             self.conversation.append({"role": "assistant", "content": assistant_content})
 
-            # Check stop condition
             if response.stop_reason == "end_turn":
                 break
 
-            # Process tool calls
             if response.stop_reason == "tool_use":
                 tool_results = []
                 for block in assistant_content:
-                    if block.type == "tool_use":
-                        result = self.registry.call(block.name, block.input)
+                    if block.get("type") == "tool_use":
+                        result = self.registry.call(block["name"], block["input"])
                         self.tool_calls_log.append({
-                            "tool": block.name,
-                            "input": block.input,
+                            "tool": block["name"],
+                            "input": block["input"],
                             "result": result,
                         })
                         tool_results.append({
                             "type": "tool_result",
-                            "tool_use_id": block.id,
+                            "tool_use_id": block["id"],
                             "content": result,
                         })
-                self.conversation.append({"role": "user", "content": tool_results})
+                if tool_results:
+                    self.conversation.append({"role": "user", "content": tool_results})
 
         return self.artifacts
+
+    @staticmethod
+    def _serialize_content(content: list) -> list[dict]:
+        """Convert SDK response content blocks to plain dicts."""
+        serialized = []
+        for block in content:
+            if hasattr(block, "type"):
+                btype = block.type
+                if btype == "text":
+                    serialized.append({"type": "text", "text": block.text})
+                elif btype == "tool_use":
+                    serialized.append({
+                        "type": "tool_use",
+                        "id": block.id,
+                        "name": block.name,
+                        "input": block.input,
+                    })
+                else:
+                    serialized.append(
+                        vars(block) if hasattr(block, "__dict__") else {"type": btype}
+                    )
+            elif isinstance(block, dict):
+                serialized.append(block)
+        return serialized

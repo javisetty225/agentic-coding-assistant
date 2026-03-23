@@ -1,13 +1,34 @@
+"""
+Agentic Coding Assistant — CLI Entry Point
+Usage:
+    python src/main.py --interactive
+    python src/main.py "Build a movie recommendation flow"
+"""
+
+from __future__ import annotations
+
 import argparse
 import os
 import sys
 from pathlib import Path
 
-from agent.orchestrator import LangflowAgent
+# ---------------------------------------------------------------------------
+# Path fix — works from any working directory (src/, project root, etc.)
+# ---------------------------------------------------------------------------
+_HERE = Path(__file__).resolve().parent
+_search = _HERE
+for _ in range(4):
+    if (_search / "agent" / "__init__.py").exists():
+        if str(_search) not in sys.path:
+            sys.path.insert(0, str(_search))
+        break
+    _search = _search.parent
+
+from agent.orchestrator import LangflowAgent  # noqa: E402
 
 BANNER = """
 ╔══════════════════════════════════════════════════════════╗
-║           LANGFLOW AGENT  •  Pi-style tool harness       ║
+║        AGENTIC CODING ASSISTANT  •  Pi-style harness     ║
 ╚══════════════════════════════════════════════════════════╝
 """
 
@@ -16,36 +37,39 @@ EXAMPLE_PROMPTS = [
     "Create a RAG (Retrieval Augmented Generation) flow with a vector store",
     "Build a sentiment analysis flow with a custom Python component",
     "Create a vision flow that accepts image uploads and describes them using Claude",
-    "Build a multi-step data transformation pipeline with custom components",
+    "Build a movie recommendation flow with MovieFilterComponent for genre and mood filtering",
 ]
 
 
-def save_artifacts(artifacts: dict, output_dir: str = "generated"):
+def save_artifacts(artifacts: dict, output_dir: str = "generated") -> list[str]:
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
     saved = []
-    for path, content in artifacts.items():
-        dest = out / path
+    for fname, content in artifacts.items():
+        dest = out / fname
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_text(content, encoding="utf-8")
         saved.append(str(dest))
     return saved
 
 
-def print_summary(artifacts: dict, tool_log: list):
+def print_summary(artifacts: dict, tool_log: list) -> None:
     print("\n" + "─" * 60)
     print("✓  Generation complete")
     print("─" * 60)
     print(f"   Files generated : {len(artifacts)}")
     print(f"   Tool calls made : {len(tool_log)}")
     print("\n   Artifacts:")
-    for path in artifacts: # noqa: PLC0206
-        size = len(artifacts[path])
-        print(f"     • {path:40s}  ({size:,} chars)")
+    for fname, content in artifacts.items():
+        print(f"     • {fname:40s}  ({len(content):,} chars)")
     print()
 
 
-def run_agent(description: str, output_dir: str = "generated", api_key: str | None = None):
+def run_agent(
+    description: str,
+    output_dir: str = "generated",
+    api_key: str | None = None,
+) -> dict:
     api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
         print("ERROR: set ANTHROPIC_API_KEY environment variable or pass --api-key")
@@ -71,7 +95,7 @@ def run_agent(description: str, output_dir: str = "generated", api_key: str | No
     return artifacts
 
 
-def interactive_mode(api_key: str | None = None):
+def interactive_mode(api_key: str | None = None) -> None:
     print(BANNER)
     print("Interactive mode. Type 'quit' to exit.\n")
     print("Example prompts:")
@@ -86,14 +110,13 @@ def interactive_mode(api_key: str | None = None):
             print("\nGoodbye!")
             break
 
-        if description.lower() in ("quit", "exit", "q"): # noqa: PLR6201
+        if description.lower() in ("quit", "exit", "q"):
             print("Goodbye!")
             break
 
         if not description:
             continue
 
-        # Allow shortcut numbers
         if description.isdigit():
             idx = int(description) - 1
             if 0 <= idx < len(EXAMPLE_PROMPTS):
@@ -104,14 +127,26 @@ def interactive_mode(api_key: str | None = None):
         print()
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Langflow Agent — generate Langflow flows and components from natural language"
+        description="Agentic Coding Assistant — generate Langflow flows from natural language"
     )
-    parser.add_argument("description", nargs="?", help="Natural language description of the flow to build")
-    parser.add_argument("--interactive", "-i", action="store_true", help="Run in interactive mode")
-    parser.add_argument("--output-dir", "-o", default="generated", help="Output directory for artifacts")
-    parser.add_argument("--api-key", help="Anthropic API key (or set ANTHROPIC_API_KEY env var)")
+    parser.add_argument(
+        "description", nargs="?",
+        help="Natural language description of the flow to build",
+    )
+    parser.add_argument(
+        "--interactive", "-i", action="store_true",
+        help="Run in interactive mode",
+    )
+    parser.add_argument(
+        "--output-dir", "-o", default="generated",
+        help="Output directory for artifacts",
+    )
+    parser.add_argument(
+        "--api-key",
+        help="Anthropic API key (or set ANTHROPIC_API_KEY env var)",
+    )
     args = parser.parse_args()
 
     if args.interactive:
