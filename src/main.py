@@ -5,7 +5,6 @@ from pathlib import Path
 
 from agent.orchestrator import LangflowAgent
 
-
 BANNER = """
 ╔══════════════════════════════════════════════════════════╗
 ║           LANGFLOW AGENT  •  Pi-style tool harness       ║
@@ -40,7 +39,7 @@ def print_summary(artifacts: dict, tool_log: list):
     print(f"   Files generated : {len(artifacts)}")
     print(f"   Tool calls made : {len(tool_log)}")
     print("\n   Artifacts:")
-    for path in artifacts:
+    for path in artifacts: # noqa: PLC0206
         size = len(artifacts[path])
         print(f"     • {path:40s}  ({size:,} chars)")
     print()
@@ -87,7 +86,7 @@ def interactive_mode(api_key: str | None = None):
             print("\nGoodbye!")
             break
 
-        if description.lower() in ("quit", "exit", "q"):
+        if description.lower() in ("quit", "exit", "q"): # noqa: PLR6201
             print("Goodbye!")
             break
 

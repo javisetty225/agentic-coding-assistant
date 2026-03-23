@@ -27,7 +27,7 @@ class NodePosition:
     y: float = 0.0
 
 
-def _base_node(
+def _base_node(  # noqa: PLR0913 PLR0917
     nid: str,
     display_name: str,
     base_classes: list[str],
@@ -209,7 +209,7 @@ def openai_model_node(nid: str | None = None, position: NodePosition | None = No
     )
 
 
-def custom_component_node(
+def custom_component_node(  # noqa: PLR0913 PLR0917
     nid: str | None = None,
     display_name: str = "CustomComponent",
     component_code: str = "",

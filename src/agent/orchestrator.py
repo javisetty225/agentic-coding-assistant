@@ -1,5 +1,8 @@
+# noqa: E501 PLW0108 PLW0108
 """
 Langflow Agent Orchestrator
+Architecture: Option B (Pi coding-agent style) — extensible tool harness
+with read/write/edit/bash + domain-specific Langflow tools.
 """
 
 from __future__ import annotations
@@ -163,7 +166,7 @@ def make_tools(workspace: Workspace, artifact_store: dict) -> ToolRegistry:
             "properties": {"json_str": {"type": "string"}},
             "required": ["json_str"],
         },
-        fn=_validate_flow,
+        fn=validate_flow,
     ))
 
     registry.register(Tool(
@@ -174,7 +177,7 @@ def make_tools(workspace: Workspace, artifact_store: dict) -> ToolRegistry:
             "properties": {"code": {"type": "string"}},
             "required": ["code"],
         },
-        fn=_validate_component,
+        fn=validate_component,
     ))
 
     registry.register(Tool(
@@ -191,7 +194,7 @@ def make_tools(workspace: Workspace, artifact_store: dict) -> ToolRegistry:
             },
             "required": ["template_type"],
         },
-        fn=_get_template,
+        fn=get_template,
     ))
 
     return registry
@@ -203,7 +206,7 @@ def _write(workspace: Workspace, artifact_store: dict, path: str, content: str) 
     return f"written {len(content)} chars to '{path}'"
 
 
-def _validate_flow(json_str: str) -> str:
+def validate_flow(json_str: str) -> str:
     try:
         data = json.loads(json_str)
     except json.JSONDecodeError as e:
@@ -219,7 +222,7 @@ def _validate_flow(json_str: str) -> str:
     return f"VALID: {len(data['nodes'])} nodes, {len(data['edges'])} edges"
 
 
-def _validate_component(code: str) -> str:
+def validate_component(code: str) -> str:
     issues = []
     if "class " not in code:
         issues.append("no class definition found")
@@ -237,7 +240,7 @@ def _validate_component(code: str) -> str:
     return "VALID component structure"
 
 
-def _get_template(template_type: str) -> str:
+def get_template(template_type: str) -> str:
     if template_type == "flow":
         return json.dumps({
             "id": f"flow-{uuid.uuid4().hex[:8]}",
@@ -362,7 +365,7 @@ Architecture rules:
 - Always call generate_node_id for every node you create
 - Always call validate_flow_json before writing the final flow.json
 - Always call validate_component_python before writing the final component .py
-- Nodes must have: id, type="genericNode", position (x,y), data with {id, type, node:{template, base_classes, display_name}}
+- Nodes must have: id, type="genericNode", position (x,y), data with {id, type, node:{template, base_classes, display_name}} 
 - Edges must have: id, source, target, sourceHandle, targetHandle
 - Langflow component inputs use classes from langflow.inputs; outputs from langflow.outputs
 - For multimodal requests: generate a vision component using FileInput and base64 image encoding
@@ -395,61 +398,30 @@ class LangflowAgent:
                 messages=self.conversation,
             )
 
-            # Serialize the assistant turn to plain dicts (SDK returns objects)
-            # This also ensures the conversation history stays JSON-safe.
-            assistant_content = self._serialize_content(response.content)
+            # Collect assistant turn
+            assistant_content = response.content
             self.conversation.append({"role": "assistant", "content": assistant_content})
 
-            # Check stop condition first
+            # Check stop condition
             if response.stop_reason == "end_turn":
                 break
 
-            # Process tool calls — CRITICAL: every tool_use block in the
-            # assistant turn must have a matching tool_result in the very next
-            # user turn. Collect ALL of them before appending.
+            # Process tool calls
             if response.stop_reason == "tool_use":
                 tool_results = []
                 for block in assistant_content:
-                    if block.get("type") == "tool_use":
-                        result = self.registry.call(block["name"], block["input"])
+                    if block.type == "tool_use":
+                        result = self.registry.call(block.name, block.input)
                         self.tool_calls_log.append({
-                            "tool": block["name"],
-                            "input": block["input"],
+                            "tool": block.name,
+                            "input": block.input,
                             "result": result,
                         })
                         tool_results.append({
                             "type": "tool_result",
-                            "tool_use_id": block["id"],
+                            "tool_use_id": block.id,
                             "content": result,
                         })
-
-                # Only append if we actually have results (guards against
-                # edge case where stop_reason=tool_use but no tool_use blocks)
-                if tool_results:
-                    self.conversation.append({"role": "user", "content": tool_results})
+                self.conversation.append({"role": "user", "content": tool_results})
 
         return self.artifacts
-
-    @staticmethod
-    def _serialize_content(content: list) -> list[dict]:
-        """Convert SDK response content blocks to plain dicts for safe re-use
-        in subsequent API calls. Handles text, tool_use, and unknown block types."""
-        serialized = []
-        for block in content:
-            if hasattr(block, "type"):
-                btype = block.type
-                if btype == "text":
-                    serialized.append({"type": "text", "text": block.text})
-                elif btype == "tool_use":
-                    serialized.append({
-                        "type": "tool_use",
-                        "id": block.id,
-                        "name": block.name,
-                        "input": block.input,
-                    })
-                else:
-                    # Forward-compatible: pass unknown block types through as dicts
-                    serialized.append(vars(block) if hasattr(block, "__dict__") else {"type": btype})
-            elif isinstance(block, dict):
-                serialized.append(block)
-        return serialized
