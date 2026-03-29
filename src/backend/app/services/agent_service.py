@@ -6,7 +6,7 @@ import os
 import sys
 import time
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 # Ensure src/ is importable so `from agent.orchestrator import ...` resolves
@@ -14,7 +14,7 @@ _SRC = Path(__file__).resolve().parents[3]
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
-from src.agent.orchestrator import LangflowAgent  # noqa: E402
+from src.agent.orchestrator import LangflowAgent
 
 from ..models.schemas import ArtifactFile, GenerateResponse, ToolCall
 
@@ -45,7 +45,7 @@ async def run_agent(
     raw = agent.run(description)
 
     duration = round(time.time() - started, 2)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     artifacts = [
         ArtifactFile(

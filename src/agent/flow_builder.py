@@ -3,7 +3,6 @@ Langflow Flow Builder
 Domain helpers that construct valid Langflow flow JSON programmatically.
 """
 
-from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass

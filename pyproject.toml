@@ -35,6 +35,9 @@ Repository = "https://github.com/javisetty225/agentic-coding-assistant"
 
 [tool.ruff]
 line-length = 120
+exclude = [
+    "src/generated"
+]
 
 [tool.ruff.lint]
 preview = true
@@ -46,3 +49,5 @@ extend-select = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
+
+

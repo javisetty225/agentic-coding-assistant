@@ -5,26 +5,13 @@ Usage:
     python src/main.py "Build a movie recommendation flow"
 """
 
-from __future__ import annotations
 
 import argparse
 import os
 import sys
 from pathlib import Path
 
-# ---------------------------------------------------------------------------
-# Path fix — works from any working directory (src/, project root, etc.)
-# ---------------------------------------------------------------------------
-_HERE = Path(__file__).resolve().parent
-_search = _HERE
-for _ in range(4):
-    if (_search / "agent" / "__init__.py").exists():
-        if str(_search) not in sys.path:
-            sys.path.insert(0, str(_search))
-        break
-    _search = _search.parent
-
-from agent.orchestrator import LangflowAgent  # noqa: E402
+from agent.orchestrator import LangflowAgent
 
 BANNER = """
 ╔══════════════════════════════════════════════════════════╗
@@ -110,7 +97,7 @@ def interactive_mode(api_key: str | None = None) -> None:
             print("\nGoodbye!")
             break
 
-        if description.lower() in ("quit", "exit", "q"):
+        if description.lower() in {"quit", "exit", "q"}:
             print("Goodbye!")
             break
 

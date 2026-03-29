@@ -1,15 +1,16 @@
+import json
+
 from langflow.custom import Component
 from langflow.inputs import (
-    MessageTextInput,
-    StrInput,
     DropdownInput,
     IntInput,
+    MessageTextInput,
     SecretStrInput,
+    StrInput,
 )
 from langflow.outputs import MessageOutput
 from langflow.schema.message import Message
 from openai import OpenAI
-import json
 
 
 class MovieRecommenderComponent(Component):

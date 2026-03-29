@@ -3,16 +3,14 @@ Agentic Coding Assistant — Orchestrator
 Architecture: Option B (Pi coding-agent style) — extensible tool harness.
 """
 
-from __future__ import annotations
 
 import json
 import re
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 import anthropic
-
 
 # ---------------------------------------------------------------------------
 # Tool registry
@@ -132,7 +130,7 @@ def make_tools(workspace: Workspace, artifact_store: dict) -> ToolRegistry:
             },
             "required": ["path", "old_text", "new_text"],
         },
-        fn=lambda path, old_text, new_text: workspace.edit(path, old_text, new_text),
+        fn=workspace.edit,
     ))
 
     registry.register(Tool(
@@ -250,10 +248,9 @@ def get_template(template_type: str) -> str:
 
     if template_type == "text_component":
         return '''\
-from langflow.custom import Component
-from langflow.inputs import MessageTextInput, StrInput
-from langflow.outputs import MessageOutput
-from langflow.schema.message import Message
+from lfx.custom.custom_component.component import Component
+from lfx.io import MessageTextInput, StrInput, Output
+from lfx.schema.data import Data
 
 
 class MyTextComponent(Component):
@@ -278,17 +275,16 @@ class MyTextComponent(Component):
         MessageOutput(name="output", display_name="Output", method="process_text"),
     ]
 
-    def process_text(self) -> Message:
-        text = self.input_text
-        return Message(text=f"Processed: {text}")
+    def process_text(self) -> Data:
+        self.status = f"Processed: {text}"
+        return Data(value=f"Processed: {text}")
 '''
 
     if template_type == "multimodal_component":
         return '''\
-from langflow.custom import Component
-from langflow.inputs import FileInput, MessageTextInput
-from langflow.outputs import MessageOutput
-from langflow.schema.message import Message
+from lfx.custom.custom_component.component import Component
+from lfx.io import FileInput, MessageTextInput, Output
+from lfx.schema.data import Data
 import base64
 
 
@@ -311,7 +307,7 @@ class MultiModalComponent(Component):
     ]
 
     outputs = [
-        MessageOutput(name="result", display_name="Result", method="analyze_image"),
+        Output(display_name="Output", name="output", method="process_text"),
     ]
 
     def analyze_image(self) -> Message:

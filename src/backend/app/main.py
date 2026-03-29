@@ -12,7 +12,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.backend.app.routers import history, generate, health
+from src.backend.app.routers import generate, health, history
 
 
 def create_app() -> FastAPI:

@@ -1,13 +1,7 @@
-from __future__ import annotations
-
 import json
-import os
-import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
-from src.agent.flow_builder import (  # noqa: E402
+from src.agent.flow_builder import (
     build_flow,
     chat_input_node,
     chat_output_node,
@@ -15,7 +9,7 @@ from src.agent.flow_builder import (  # noqa: E402
     node_id,
     openai_model_node,
 )
-from src.agent.orchestrator import (  # noqa: E402
+from src.agent.orchestrator import (
     Workspace,
     get_template,
     validate_component,
